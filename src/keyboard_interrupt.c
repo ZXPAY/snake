@@ -11,6 +11,7 @@ static void intHandler(int sig) {
     assert(sig==2);
     printf("interrupt signal detect : %d\n", sig);
     keepRunning = 0;
+    SIGINT_cb();
 }
 
 void init_intHandler(void) {
@@ -21,3 +22,6 @@ bool isInt(void) {
     return keepRunning;
 }
 
+__attribute__((weak)) void SIGINT_cb(void) {
+    ;
+}

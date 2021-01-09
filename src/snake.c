@@ -1,90 +1,81 @@
-/* Include standard library */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <assert.h>
-
-#include <conio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include "snake.h"
-#include "debug_printf.h"
-#include "keyboard_interrupt.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
-void clear_screen(void) {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
+void init_snake(snake_t *snake) {
+    snake->dir = DIR_RIGHT;   // defaule direction
+    snake->pos.x = SNAKE_DEFAULT_X;
+    snake->pos.y = SNAKE_DEFAULT_Y;
+    snake->score = 1;
+    snake->food.x = 0;
+    snake->food.y = 0;
+    snake->food.gen_flag = false;
+    snake->gameover = false;
+    memset(snake->map, skNONE, sizeof(snake->map));
+    snake->map[snake->pos.x][snake->pos.y] = SNAKE;
+    snake_GenerateFood(snake);
 }
 
-/* Define the snake structure */
-snake_t snake;
+void snake_GenerateFood(snake_t *snake) {
+    snake->food.x = rand() % AREA_L;
+    snake->food.y = rand() % AREA_H;
+    snake->food.gen_flag = true;
+    snake->map[snake->food.x][snake->food.y] = FOOD;
+}
 
-uint32_t c1 = 0;
-uint32_t c2 = 0;
-uint32_t c3 = 0;
-
-DWORD WINAPI task_update_map(LPVOID Param){
-    while(true) {
-        c1++;
-        Sleep(REFRESH_SCREEN_TIME);
+void snake_Handler(snake_t *snake) {
+    if(snake->gameover) {
+        snake_gameover_cb(snake);
+        return;
     }
-}
-DWORD WINAPI task_keyin(LPVOID Param){
-    while(true) {
-        switch(getch()) {
-            case 72:    // up
-                DEBUG_INFO("up\n");
-                snake.dir = DIR_UP;
-                break;
-            case 80:   // down
-                DEBUG_INFO("down\n");
-                snake.dir = DIR_DOWN;
-                break;
-            case 75:   // left
-                DEBUG_INFO("left\n");
-                snake.dir = DIR_LEFT;
-                break;
-            case 77:   // right
-                DEBUG_INFO("right\n");
-                snake.dir = DIR_DOWN;
-                break;
-        }
-        
+    if((snake->pos.x == snake->food.x) && (snake->pos.y == snake->food.y)) {
+        snake->map[snake->food.x][snake->food.y] = skNONE;
+        snake_GenerateFood(snake);
+        snake->score++;
     }
 }
 
-int main(void) {
-    printf("score %d\n" , 0);
-    init_intHandler();      // Handler ctrl-c
-
-    /* Initialize the snake */
-    init_snake(&snake);
-    
-    /* Define the thread for updating map */
-    DWORD ThreadId_update_map;
-    HANDLE ThreadHandle_update_map;
-    ThreadHandle_update_map = CreateThread(NULL, 0, task_update_map, NULL, 0, &ThreadId_update_map);
-    (void)ThreadHandle_update_map;
-
-    /* Define the thread for handling keyboard key input */
-    DWORD ThreadId_keyin;
-    HANDLE ThreadHandle_keyin;
-    ThreadHandle_keyin = CreateThread(NULL, 0, task_keyin, NULL, 0, &ThreadId_keyin);
-    (void)ThreadHandle_keyin;
-
-    /* main loop */
-    while(isInt()) {
-        
+void snake_MoveHandler(snake_t *snake) {
+    if(snake->gameover) {
+        snake_gameover_cb(snake);
+        return;
     }
-    
-    printf("program stop ...\n");
-    return 0;
+    snake->map[snake->pos.x][snake->pos.y] = skNONE;
+    switch (snake->dir) {
+        case DIR_UP:
+            snake->pos.y--;
+            break;
+        case DIR_DOWN:
+            snake->pos.y++;
+            break;
+        case DIR_LEFT:
+            snake->pos.x--;
+            break;
+        case DIR_RIGHT:
+            snake->pos.x++;
+            break;
+        default:
+            break;
+    }
+    if((snake->pos.x < 0) || (snake->pos.y < 0) || (snake->pos.x >= AREA_L) || (snake->pos.y >= AREA_H)) {
+        snake->gameover = true;
+    }
+    snake->map[snake->pos.x][snake->pos.y] = SNAKE;
 }
 
+void snake_DirHandler(snake_t *snake, snake_direction dir) {
+    if(snake->gameover) {
+        snake_gameover_cb(snake);
+        return;
+    }
+    if(dir == DIR_NONE) return;
+    snake->dir = dir;
+}
 
-
+__attribute__((weak)) void snake_gameover_cb(snake_t *snake) {
+    while(true);
+}

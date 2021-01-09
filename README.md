@@ -1,5 +1,4 @@
-# Julia-practice
-
+# Greedy snake
 
 
 
