@@ -1,4 +1,5 @@
 PROJECT = snake
+RELESE  = false
 
 CC      = gcc
 OBJCOPY = objcopy
@@ -11,7 +12,7 @@ VPATH = ./src
 DEP_DIR  = ./inc
 
 CSRC  = snake.c keyboard_interrupt.c
-DEBUG	= 0
+DEBUG = 0
 OBJ = $(patsubst %.c, %.o, $(CSRC))
 OBJ := $(addprefix $(OBJDIR)/, $(OBJ))
 OBJDEASSEMBLY = $(patsubst %.c, %.s, $(CSRC))
@@ -20,6 +21,11 @@ OBJDEASSEMBLY := $(addprefix $(OBJDIR)/, $(OBJDEASSEMBLY))
 CFLAGS  = -std=c99 -Wall -O0
 CFLAGS += -g$(DEBUG)
 CFLAGS += $(addprefix -I, $(DEP_DIR))
+ifeq ($(RELESE),true)
+CFLAGS += -DNDEBUG
+else
+CFLAGS += -DDEBUG
+endif
 
 all: $(PROJECT).exe $(PROJECT).sym $(PROJECT).lst
 	@echo complete
