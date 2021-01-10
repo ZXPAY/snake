@@ -13,6 +13,7 @@
 #include <Windows.h>
 #endif
 
+void start_snake_thread(void);
 void terminate_thread(void);
 
 void clear_screen(void) {
@@ -30,7 +31,7 @@ uint32_t c1 = 0;
 uint32_t c2 = 0;
 uint32_t c3 = 0;
 
-DWORD WINAPI task_update_map(LPVOID Param){
+DWORD WINAPI task_update_map(LPVOID Param) {
     while(true) {
         printf("\e[?25l");
         printf("score: %d, gameover: %d" , snake.score, snake.gameover);
@@ -48,26 +49,32 @@ DWORD WINAPI task_update_map(LPVOID Param){
         for(uint32_t i=0;i<AREA_H+2;i++) putchar('=');
         putchar('\n');
         DEBUG_INFO("Dir: %d\n", snake.dir);
-        DEBUG_INFO("Pos: %d, %d\n", snake.pos.x, snake.pos.y);
+        DEBUG_INFO("head: %d, %d\n", snake.head->pos.x, snake.head->pos.y);
+        snake_body_t *body;
+        body = snake.head;
+        for(uint32_t i=0;i<snake.body_length;i++) {
+            body = body->next;
+            DEBUG_INFO("body[%d]: %d, %d\n", i, body->pos.x, body->pos.y);
+        }
         Sleep(REFRESH_SCREEN_TIME);
         clear_screen();
     }
 }
 
-DWORD WINAPI task_snakeMove(LPVOID Param){
+DWORD WINAPI task_snakeMove(LPVOID Param) {
     while(true) {
         snake_MoveHandler(&snake);
         Sleep(600-SNAKE_SPEED);
     }
 }
 
-DWORD WINAPI task_snakeHandler(LPVOID Param){
+DWORD WINAPI task_snakeHandler(LPVOID Param) {
     while(true) {
         snake_Handler(&snake);
     }
 }
 
-DWORD WINAPI task_keyin(LPVOID Param){
+DWORD WINAPI task_keyin(LPVOID Param) {
     while(true) {
         snake_direction dir = DIR_NONE;
         switch(getch()) {
@@ -102,7 +109,21 @@ int main(void) {
 
     /* Initialize the snake */
     init_snake(&snake);
-    
+    start_snake_thread();
+
+    /* main loop */
+    while(isInt()) {
+        if(snake.gameover) {
+            break;
+        }        
+    }
+    clear_screen();
+    printf("program stop ...\n");
+    system("pause");
+    return 0;
+}
+
+void start_snake_thread(void) {
     /* Define the thread for updating map */
     ThreadHandle_update_map = CreateThread(NULL, 0, task_update_map, NULL, 0, &ThreadId_update_map);
     (void)ThreadHandle_update_map;
@@ -118,17 +139,6 @@ int main(void) {
     /* Define the thread for handling keyboard key input */
     ThreadHandle_keyin = CreateThread(NULL, 0, task_keyin, NULL, 0, &ThreadId_keyin);
     (void)ThreadHandle_keyin;
-
-    /* main loop */
-    while(isInt()) {
-        if(snake.gameover) {
-            break;
-        }        
-    }
-    clear_screen();
-    printf("program stop ...\n");
-    system("pause");
-    return 0;
 }
 
 void terminate_thread(void) {

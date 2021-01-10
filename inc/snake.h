@@ -32,32 +32,36 @@ typedef enum SNAKE_INFO_ENUM{
 #define SNAKE_DEFAULT_X     (5)
 #define SNAKE_DEFAULT_Y     (5)
 
-typedef uint8_t snake_map_t;
-typedef uint8_t snake_dir_t;
-typedef uint32_t snake_speed_t;
-
-typedef struct _snake_pos_t {
+typedef struct _snake_pos_ {
     int x;
     int y;
 }snake_pos_t;
-typedef struct _snake_food_t {
-    int x;
-    int y;
-    uint8_t gen_flag;
-}snake_food_t;
+
+/* Linklist snake body type */
+typedef struct _snake_body_ {
+    snake_pos_t pos;
+    struct _snake_body_ *next;
+}snake_body_t;
+
+typedef uint8_t snake_map_t;
+typedef uint8_t snake_dir_t;
+typedef uint32_t snake_speed_t;
+typedef snake_pos_t snake_food_t;
 
 typedef struct _snake_t {
     snake_map_t map[AREA_L][AREA_H];
     snake_dir_t dir;
-    snake_pos_t pos;
     snake_food_t food;
     snake_speed_t speed;
+    snake_body_t *head;
+    uint32_t body_length;
     uint32_t score;
     bool gameover;
 }snake_t;
 
 void init_snake(snake_t *snake);
 void snake_GenerateFood(snake_t *snake);
+void snake_createBody(snake_t *snake, snake_pos_t *pos);
 void snake_MoveHandler(snake_t *snake);
 void snake_Handler(snake_t *snake);
 void snake_DirHandler(snake_t *snake, snake_direction dir);
