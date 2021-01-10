@@ -51,16 +51,11 @@ void snake_createBody(snake_t *snake, snake_pos_t *pos) {
 bool isCollision(snake_t *snake) {
     snake_body_t *head = snake->head;
     snake_body_t *temp = head;
-    int cnt = 0;
+    
     while(temp != NULL) {
         assert(head!=NULL);
         assert(temp!=NULL);
-        if((temp->pos.x == head->pos.x) && (temp->pos.y == head->pos.y)) {
-            cnt++;
-            if(cnt > 2) {
-                return true;
-            }
-        }
+
         temp = temp->next;
     }
     return false;
