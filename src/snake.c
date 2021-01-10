@@ -3,10 +3,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <time.h>
 #include "snake.h"
-#include "debug_printf.h"
-#include <Windows.h>
 
 void init_snake(snake_t *snake) {
     snake->dir = DIR_RIGHT;   // defaule direction
@@ -21,7 +20,8 @@ void init_snake(snake_t *snake) {
     memset(snake->head, 0, sizeof(snake_body_t));
     snake->head->pos.x = SNAKE_DEFAULT_X;
     snake->head->pos.y = SNAKE_DEFAULT_Y;
-    snake->map[snake->head->pos.x][snake->head->pos.y] = SNAKE;
+    snake_createBody(snake, &snake->head->pos);
+    snake->map[snake->head->pos.x][snake->head->pos.y] = SNAKE_ASCII_HEAD;
     snake_GenerateFood(snake);
 }
 
@@ -46,12 +46,28 @@ void snake_createBody(snake_t *snake, snake_pos_t *pos) {
             temp = temp->next;
         }
     }
-    Sleep(1000);
+}
+
+bool isCollision(snake_t *snake) {
+    snake_body_t *head = snake->head;
+    snake_body_t *temp = head;
+    int cnt = 0;
+    while(temp != NULL) {
+        assert(head!=NULL);
+        assert(temp!=NULL);
+        if((temp->pos.x == head->pos.x) && (temp->pos.y == head->pos.y)) {
+            cnt++;
+            if(cnt > 2) {
+                return true;
+            }
+        }
+        temp = temp->next;
+    }
+    return false;
 }
 
 void snake_Handler(snake_t *snake) {
     if(snake->gameover) {
-        snake_gameover_cb(snake);
         return;
     }
     if((snake->head->pos.x == snake->food.x) && (snake->head->pos.y == snake->food.y)) {
@@ -59,12 +75,39 @@ void snake_Handler(snake_t *snake) {
         snake->map[snake->food.x][snake->food.y] = skNONE;
         snake_GenerateFood(snake);
         snake->score++;
+        snake_pos_t body_pos;
+        snake_body_t *tail = snake->head;
+        while(tail->next != NULL) {
+            tail = tail->next;
+        }
+        memcpy(&body_pos, &tail->pos, sizeof(snake_pos_t));
+        switch (snake->dir) {
+            case DIR_UP:
+                body_pos.y--;
+                break;
+            case DIR_DOWN:
+                body_pos.y++;
+                break;
+            case DIR_LEFT:
+                body_pos.x--;
+                break;
+            case DIR_RIGHT:
+                body_pos.x++;
+                break;
+            default:
+                break;
+        }
+        snake_createBody(snake, &body_pos);
+    }
+    if(isCollision(snake)) {
+        snake->gameover = true;
+        snake_gameover_cb(snake);
+        return;
     }
 }
 
 void snake_MoveHandler(snake_t *snake) {
     if(snake->gameover) {
-        snake_gameover_cb(snake);
         return;
     }
     snake->map[snake->head->pos.x][snake->head->pos.y] = skNONE;
@@ -87,21 +130,40 @@ void snake_MoveHandler(snake_t *snake) {
         default:
             break;
     }
+    snake_pos_t *col_pos = malloc(snake->body_length*sizeof(snake_pos_t));
+    assert(col_pos!=NULL);
+    memset(col_pos, 0, snake->body_length*sizeof(snake_pos_t));
+    int cnt = 0;
     for(uint32_t i=0;i<snake->body_length;i++) {
         temp = temp->next;   // next body object
-        memcpy(&temp->pos, &last_pos, sizeof(snake_pos_t));
-        memcpy(&last_pos, &temp->pos, sizeof(snake_pos_t));
+        assert(temp!=NULL);
+        memcpy(&col_pos[cnt++], &temp->pos, sizeof(snake_pos_t));
+        if(i==0) {
+            memcpy(&temp->pos, &last_pos, sizeof(snake_pos_t));
+        }
+        else {
+            memcpy(&temp->pos, &col_pos[cnt-2], sizeof(snake_pos_t));
+        }
+        snake->map[temp->pos.x][temp->pos.y] = SNAKE_BODY;
+        if(i==snake->body_length-1) { // tail
+            snake->map[temp->pos.x][temp->pos.y] = SNAKE_ASCII_NONE;
+        }
     }
+    free(col_pos);
+    // Handle the linklist
+    snake->map[snake->head->pos.x][snake->head->pos.y] = SNAKE_HEAD;
+    
     if((snake->head->pos.x < 0) || (snake->head->pos.y < 0) || (snake->head->pos.x >= AREA_L) || (snake->head->pos.y >= AREA_H)) {
         snake->gameover = true;
+        snake_gameover_cb(snake);
+        return;
     }
-    // Handle the linklist
-    snake->map[snake->head->pos.x][snake->head->pos.y] = SNAKE;
+    
+    snake_Handler(snake);
 }
 
 void snake_DirHandler(snake_t *snake, snake_direction dir) {
     if(snake->gameover) {
-        snake_gameover_cb(snake);
         return;
     }
     if(dir == DIR_NONE) return;

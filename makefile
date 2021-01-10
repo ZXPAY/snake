@@ -1,5 +1,5 @@
 PROJECT = snake
-RELESE  = false
+RELEASE  = true
 
 CC      = gcc
 OBJCOPY = objcopy
@@ -26,7 +26,7 @@ TEST_OBJ := $(addprefix $(TEST_OBJDIR)/, $(TEST_OBJ))
 CFLAGS  = -std=c99 -Wall -O0
 CFLAGS += -g$(DEBUG)
 CFLAGS += $(addprefix -I, $(DEP_DIR))
-ifeq ($(RELESE),true)
+ifeq ($(RELEASE),true)
 CFLAGS += -DNDEBUG
 else
 CFLAGS += -DDEBUG

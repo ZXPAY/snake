@@ -5,11 +5,12 @@
 #define START_Y_POS         2
 #define AREA_L              20
 #define AREA_H              20
-#define SNAKE_ASCII         '+'
-#define SNAKE_FOOD          '*'
-#define SNAKE_NONE          ' '
+#define SNAKE_ASCII_HEAD    '+'
+#define SNAKE_ASCII_BODY    'O'
+#define SNAKE_ASCII_FOOD    '*'
+#define SNAKE_ASCII_NONE    ' '
 
-#define REFRESH_SCREEN_TIME 10
+#define REFRESH_SCREEN_TIME 5
 #define SNAKE_SPEED_MAX     500
 #define SNAKE_SPEED         300
 
@@ -22,9 +23,10 @@ typedef enum DIR_ENUM{
 }snake_direction;
 
 typedef enum SNAKE_INFO_ENUM{
-    skNONE = SNAKE_NONE,
-    SNAKE = SNAKE_ASCII,
-    FOOD = SNAKE_FOOD,
+    skNONE     = SNAKE_ASCII_NONE,
+    SNAKE_HEAD = SNAKE_ASCII_HEAD,
+    SNAKE_BODY = SNAKE_ASCII_BODY,
+    FOOD       = SNAKE_ASCII_FOOD,
 }snake_info;
 
 /* Define the default value */
@@ -62,6 +64,7 @@ typedef struct _snake_t {
 void init_snake(snake_t *snake);
 void snake_GenerateFood(snake_t *snake);
 void snake_createBody(snake_t *snake, snake_pos_t *pos);
+bool isCollision(snake_t *snake);
 void snake_MoveHandler(snake_t *snake);
 void snake_Handler(snake_t *snake);
 void snake_DirHandler(snake_t *snake, snake_direction dir);

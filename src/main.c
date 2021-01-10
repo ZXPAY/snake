@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <time.h>
 
 #include <conio.h>
 #include "snake.h"
@@ -27,10 +28,6 @@ void clear_screen(void) {
 /* Define the snake structure */
 snake_t snake;
 
-uint32_t c1 = 0;
-uint32_t c2 = 0;
-uint32_t c3 = 0;
-
 DWORD WINAPI task_update_map(LPVOID Param) {
     while(true) {
         printf("\e[?25l");
@@ -48,6 +45,7 @@ DWORD WINAPI task_update_map(LPVOID Param) {
         }
         for(uint32_t i=0;i<AREA_H+2;i++) putchar('=');
         putchar('\n');
+#ifdef DEBUG
         DEBUG_INFO("Dir: %d\n", snake.dir);
         DEBUG_INFO("head: %d, %d\n", snake.head->pos.x, snake.head->pos.y);
         snake_body_t *body;
@@ -56,6 +54,7 @@ DWORD WINAPI task_update_map(LPVOID Param) {
             body = body->next;
             DEBUG_INFO("body[%d]: %d, %d\n", i, body->pos.x, body->pos.y);
         }
+#endif
         Sleep(REFRESH_SCREEN_TIME);
         clear_screen();
     }
@@ -65,12 +64,6 @@ DWORD WINAPI task_snakeMove(LPVOID Param) {
     while(true) {
         snake_MoveHandler(&snake);
         Sleep(600-SNAKE_SPEED);
-    }
-}
-
-DWORD WINAPI task_snakeHandler(LPVOID Param) {
-    while(true) {
-        snake_Handler(&snake);
     }
 }
 
@@ -99,12 +92,11 @@ static HANDLE ThreadHandle_update_map;
 static DWORD ThreadId_update_map;
 static HANDLE ThreadHandle_snakeMove;
 static DWORD ThreadId_snakeMove;
-static HANDLE ThreadHandle_snakeHandler;
-static DWORD ThreadId_snakeHandler;
 static HANDLE ThreadHandle_keyin;
 static DWORD ThreadId_keyin;
 
 int main(void) {
+    srand(time(NULL));
     init_intHandler();      // Handler ctrl-c
 
     /* Initialize the snake */
@@ -119,6 +111,7 @@ int main(void) {
     }
     clear_screen();
     printf("program stop ...\n");
+    printf("your score: %d\n", snake.score);
     system("pause");
     return 0;
 }
@@ -132,22 +125,17 @@ void start_snake_thread(void) {
     ThreadHandle_snakeMove = CreateThread(NULL, 0, task_snakeMove, NULL, 0, &ThreadId_snakeMove);
     (void)ThreadHandle_snakeMove;
 
-    /* Define the thread for handling the snake behavior */
-    ThreadHandle_snakeHandler = CreateThread(NULL, 0, task_snakeHandler, NULL, 0, &ThreadId_snakeHandler);
-    (void)ThreadHandle_snakeHandler;
-
     /* Define the thread for handling keyboard key input */
     ThreadHandle_keyin = CreateThread(NULL, 0, task_keyin, NULL, 0, &ThreadId_keyin);
     (void)ThreadHandle_keyin;
 }
 
 void terminate_thread(void) {
+    fflush(stdin);
+    fflush(stdout);
+    TerminateThread(ThreadHandle_keyin, ThreadId_keyin);
     TerminateThread(ThreadHandle_update_map, ThreadId_update_map);
     TerminateThread(ThreadHandle_snakeMove, ThreadId_snakeMove);
-    TerminateThread(ThreadHandle_snakeHandler, ThreadId_snakeHandler);
-    TerminateThread(ThreadHandle_keyin, ThreadId_keyin);
-    fflush(stdout);
-    fflush(stdin);
 }
 
 void snake_gameover_cb(snake_t *snake) {
